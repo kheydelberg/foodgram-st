@@ -6,12 +6,12 @@ import sys
 from django.core.files import File
 from django.conf import settings
 
-# Настройка Django до импорта моделей
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # Добавляем корень проекта в PYTHONPATH
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")  # Убедитесь, что foodgram — имя вашего проекта
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
 
-# Теперь можно импортировать модели Django
+
 from recipes.models import Recipe, Ingredient, RecipeIngredient
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -91,7 +91,7 @@ def create_test_data():
         for recipe_data in recipes_data:
             recipe = Recipe.objects.create(
                 author=user,
-                name=recipe_data['name'], 
+                name=recipe_data['name'],
                 text=recipe_data['description'],
                 cooking_time=recipe_data['cooking_time'],
             )
@@ -110,11 +110,8 @@ def create_test_data():
 
 def main():
     """Основная логика инициализации."""
-    # 1. Применяем миграции
     print('Applying migrations...')
     call_command('migrate', '--noinput')
-
-    # 3. Создаем суперпользователя
     User = get_user_model()
     if not User.objects.filter(username='admin').exists():
         print('Creating superuser...')
@@ -129,7 +126,6 @@ def main():
     else:
         print('Superuser already exists.')
 
-    # 4. Генерируем тестовые данные (если DEBUG=True)
     print('Generating test data...')
     create_test_data()
 

@@ -2,13 +2,17 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-# CHEKED, but subscribe yourself different and upload to avatars
-
 
 class CustomUser(AbstractUser):
+    """Custom user model with email as username field and avatar support."""
+
     email = models.EmailField(_('email address'), unique=True, max_length=70)
     avatar = models.ImageField(
-        _('avatar'), upload_to='avatars/', blank=True, null=True)
+        _('avatar'),
+        upload_to='avatars/',
+        blank=True,
+        null=True
+    )
     first_name = models.CharField(_('first name'), max_length=100)
     last_name = models.CharField(_('last name'), max_length=100)
 
@@ -16,15 +20,20 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
+        """Meta options for CustomUser model."""
+
         ordering = ['username']
         verbose_name = _('user')
         verbose_name_plural = _('users')
 
     def __str__(self):
+        """String representation of the user."""
         return self.username
 
 
 class Follow(models.Model):
+    """Model representing user subscriptions (who follows whom)."""
+
     user = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
@@ -39,6 +48,8 @@ class Follow(models.Model):
     )
 
     class Meta:
+        """Meta options for Follow model."""
+
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],
@@ -54,4 +65,5 @@ class Follow(models.Model):
         verbose_name_plural = _('subscriptions')
 
     def __str__(self):
+        """String representation of the follow relationship."""
         return f'{self.user} → {self.author}'

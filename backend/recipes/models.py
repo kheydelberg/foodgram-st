@@ -5,26 +5,30 @@ from django.utils.text import slugify
 from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
-from django.conf import settings
-
-# CHECKED
 
 
 class Ingredient(models.Model):
+    """Model representing an ingredient with measurement unit."""
+
     name = models.CharField(_('name'), max_length=200, db_index=True)
     measurement_unit = models.CharField(_('measurement unit'), max_length=50)
 
     class Meta:
+        """Meta options for Ingredient model."""
+
         ordering = ['name']
-        unique_together = ['name', 'measurement_unit']  # pay attention
+        unique_together = ['name', 'measurement_unit']
         verbose_name = _('ingredient')
         verbose_name_plural = _('ingredients')
 
     def __str__(self):
+        """String representation of the ingredient."""
         return f'{self.name} ({self.measurement_unit})'
 
 
 class Recipe(models.Model):
+    """Model representing a cooking recipe."""
+
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -44,15 +48,15 @@ class Recipe(models.Model):
         _('cooking time'),
         validators=[MinValueValidator(
             1,
-            message=_(
-                f'Cooking time should be at least {1} minute'
-            )
-        )
-        ],
+            message=_('Cooking time should be at least 1 minute')
+        )],
     )
     pub_date = models.DateTimeField(
-        _('publication date'), auto_now_add=True, db_index=True,)
-    short_code = models.SlugField(  # somnitelno no okay
+        _('publication date'),
+        auto_now_add=True,
+        db_index=True,
+    )
+    short_code = models.SlugField(
         max_length=10,
         unique=True,
         blank=True,
@@ -61,21 +65,18 @@ class Recipe(models.Model):
     )
 
     class Meta:
+        """Meta options for Recipe model."""
+
         ordering = ['-pub_date']
         verbose_name = _('recipe')
         verbose_name_plural = _('recipes')
-        """
-        constraints = [
-            models.UniqueConstraint(
-                fields=['name', 'author'], name='unique_recipe_per_author'
-            )
-        ]
-        """
 
     def __str__(self):
+        """String representation of the recipe."""
         return self.name
 
-    def save(self, *args, **kwargs):  # somnitelno no okay
+    def save(self, *args, **kwargs):
+        """Generate short code for the recipe before saving."""
         if not self.short_code:
             base_slug = slugify(self.name)[:6] or 'recipe'
             self.short_code = f"{base_slug}-{uuid.uuid4().hex[:4]}".lower()
@@ -86,33 +87,47 @@ class Recipe(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def short_url(self):  # somnitelno no okay
-        path = reverse('recipe_short_link', kwargs={
-                       'short_code': self.short_code})
+    def short_url(self):
+        """Generate short URL for the recipe."""
+        path = reverse(
+            'recipe_short_link',
+            kwargs={'short_code': self.short_code}
+        )
         return f"{settings.BASE_URL}{path}"
 
-    def get_absolute_url(self):  # somnitelno no okay
+    def get_absolute_url(self):
+        """Get absolute URL for the recipe detail page."""
         return reverse('recipe_detail', kwargs={'pk': self.id})
 
 
 class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE,
-                               related_name='recipe_ingredients',
-                               verbose_name=_('recipe'))
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE,
-                                   related_name='recipe_ingredients',
-                                   verbose_name=_('ingredient'),)
-    amount = models.PositiveSmallIntegerField(_('amount'),
-                                              validators=[
-        MinValueValidator(
-            1,
-            message=_(
-                f'Amount should be at least {1}'
+    """Intermediate model for Recipe-Ingredient relationship with amounts."""
+
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='recipe_ingredients',
+        verbose_name=_('recipe')
+    )
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='recipe_ingredients',
+        verbose_name=_('ingredient'),
+    )
+    amount = models.PositiveSmallIntegerField(
+        _('amount'),
+        validators=[
+            MinValueValidator(
+                1,
+                message=_('Amount should be at least 1')
             )
-        )
-    ],)
+        ],
+    )
 
     class Meta:
+        """Meta options for RecipeIngredient model."""
+
         ordering = ['recipe', 'ingredient']
         verbose_name = _('recipe ingredient')
         verbose_name_plural = _('recipe ingredients')
@@ -125,6 +140,8 @@ class RecipeIngredient(models.Model):
 
 
 class UserToRecipeLink(models.Model):
+    """Abstract base model for user-recipe relationships."""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -137,6 +154,8 @@ class UserToRecipeLink(models.Model):
     )
 
     class Meta:
+        """Meta options for UserToRecipeLink model."""
+
         abstract = True
         ordering = ['recipe__name']
         indexes = [
@@ -144,11 +163,16 @@ class UserToRecipeLink(models.Model):
         ]
 
     def __str__(self):
+        """String representation of the user-recipe relationship."""
         return f'{self.user} - {self.recipe}'
 
 
 class Favorite(UserToRecipeLink):
+    """Model representing user's favorite recipes."""
+
     class Meta(UserToRecipeLink.Meta):
+        """Meta options for Favorite model."""
+
         verbose_name = _('favorite')
         verbose_name_plural = _('favorites')
         default_related_name = 'favorites'
@@ -161,7 +185,11 @@ class Favorite(UserToRecipeLink):
 
 
 class ShoppingCart(UserToRecipeLink):
+    """Model representing user's shopping cart items."""
+
     class Meta(UserToRecipeLink.Meta):
+        """Meta options for ShoppingCart model."""
+
         verbose_name = _('shopping cart item')
         verbose_name_plural = _('shopping cart items')
         default_related_name = 'shopping_carts'

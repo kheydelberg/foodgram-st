@@ -19,12 +19,11 @@ from api.serializers.recipes import (
     RecipeCreateUpdateSerializer, FavoriteSerializer,
     ShoppingCartSerializer
 )
-
 from api.utils import generate_pdf_shopping_list, generate_text_shopping_list
 
 
 class IngredientAPIViewSet(viewsets.ReadOnlyModelViewSet):
-    """API для работы с ингредиентами."""
+    """API endpoint for managing ingredients."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -35,7 +34,7 @@ class IngredientAPIViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeAPIViewSet(viewsets.ModelViewSet):
-    """API для управления рецептами."""
+    """API endpoint for managing recipes."""
 
     queryset = Recipe.objects.select_related(
         'author').prefetch_related('ingredients')
@@ -44,16 +43,29 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     def get_serializer_class(self):
+        """Return appropriate serializer based on action."""
         if self.action in ['list', 'retrieve']:
             return RecipeListSerializer
         return RecipeCreateUpdateSerializer
 
     def perform_create(self, serializer):
+        """Set the recipe author to the current user."""
         serializer.save(author=self.request.user)
 
     def _manage_recipe_action(self, request, recipe_id, model,
                               serializer_class, error_msg):
-        """Общий обработчик действий с рецептами."""
+        """Generic handler for recipe-related actions.
+
+        Args:
+            request: HTTP request object
+            recipe_id: ID of the recipe
+            model: Model class to interact with
+            serializer_class: Serializer to use
+            error_msg: Error message for failed operations
+
+        Returns:
+            Response with appropriate status code
+        """
         recipe = get_object_or_404(Recipe, id=recipe_id)
         user = request.user
 
@@ -67,8 +79,10 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
 
         deleted, _ = model.objects.filter(user=user, recipe=recipe).delete()
         if not deleted:
-            return Response({'detail': error_msg},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': error_msg},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -78,11 +92,19 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
         url_path='favorite'
     )
     def favorite_action(self, request, pk=None):
-        """Добавление/удаление рецепта в избранное."""
+        """Add/remove recipe from favorites.
+
+        Args:
+            request: HTTP request object
+            pk: Recipe ID
+
+        Returns:
+            Response with appropriate status code
+        """
         return self._manage_recipe_action(
             request, pk,
             Favorite, FavoriteSerializer,
-            'Рецепт отсутствует в избранном'
+            'Recipe not found in favorites'
         )
 
     @action(
@@ -92,11 +114,19 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
         url_path='shopping_cart'
     )
     def shopping_cart_action(self, request, pk=None):
-        """Управление списком покупок."""
+        """Manage shopping cart items.
+
+        Args:
+            request: HTTP request object
+            pk: Recipe ID
+
+        Returns:
+            Response with appropriate status code
+        """
         return self._manage_recipe_action(
             request, pk,
             ShoppingCart, ShoppingCartSerializer,
-            'Рецепт отсутствует в списке покупок'
+            'Recipe not found in shopping cart'
         )
 
     @action(
@@ -106,7 +136,14 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart'
     )
     def export_shopping_list(self, request):
-        """Экспорт списка покупок."""
+        """Export shopping list in specified format.
+
+        Args:
+            request: HTTP request object
+
+        Returns:
+            Shopping list in requested format (PDF/TXT)
+        """
         user = request.user
         ingredients = (
             RecipeIngredient.objects
@@ -121,12 +158,12 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
 
         if not ingredients:
             return Response(
-                {'message': 'Список покупок пуст'},
+                {'message': 'Shopping list is empty'},
                 status=status.HTTP_200_OK
             )
 
-        format = request.query_params.get('format', 'pdf')
-        if format == 'txt':
+        export_format = request.query_params.get('format', 'pdf')
+        if export_format == 'txt':
             return generate_text_shopping_list(ingredients, user)
         return generate_pdf_shopping_list(ingredients, user)
 
@@ -137,6 +174,15 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
         permission_classes=[AllowAny]
     )
     def get_short_link(self, request, pk=None):
+        """Get short URL for a recipe.
+
+        Args:
+            request: HTTP request object
+            pk: Recipe ID
+
+        Returns:
+            Response containing short URL code
+        """
         recipe = self.get_object()
         return Response({
             'short-link': recipe.short_code

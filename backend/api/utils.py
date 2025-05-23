@@ -7,8 +7,19 @@ from django.http import HttpResponse
 
 
 def generate_text_shopping_list(components, user):
+    """Generate a plain text shopping list for download.
+
+    Args:
+        components: List of ingredients with their amounts
+        user: User object for whom the list is generated
+
+    Returns:
+        HttpResponse with text file attachment
+    """
     lines = []
-    header = f"Список покупок пользователя: {user.get_full_name() or user.username}\n"
+    header = (
+        f"Shopping list for user: {user.get_full_name() or user.username}\n"
+    )
     lines.append(header)
     lines.append("=" * len(header.strip()) + "\n")
 
@@ -16,11 +27,22 @@ def generate_text_shopping_list(components, user):
         lines.append(f"{item['name']} ({item['unit']}) — {item['total']}")
 
     response = HttpResponse('\n'.join(lines), content_type='text/plain')
-    response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
+    response['Content-Disposition'] = (
+        'attachment; filename="shopping_list.txt"'
+    )
     return response
 
 
 def generate_pdf_shopping_list(components, user):
+    """Generate a PDF shopping list for download.
+
+    Args:
+        components: List of ingredients with their amounts
+        user: User object for whom the list is generated
+
+    Returns:
+        HttpResponse with PDF file attachment
+    """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     elements = []
@@ -33,11 +55,13 @@ def generate_pdf_shopping_list(components, user):
         spaceAfter=20
     )
 
-    title = f"Список покупок: {user.get_full_name() or user.username}"
+    title = f"Shopping list: {user.get_full_name() or user.username}"
     elements.append(Paragraph(title, title_style))
 
     for item in components:
-        item_text = f"<b>{item['name']}</b> ({item['unit']}) — {item['total']}"
+        item_text = (
+            f"<b>{item['name']}</b> ({item['unit']}) — {item['total']}"
+        )
         elements.append(Paragraph(item_text, styles['Normal']))
         elements.append(Paragraph("<br/>", styles['Normal']))
 
@@ -45,5 +69,7 @@ def generate_pdf_shopping_list(components, user):
     buffer.seek(0)
 
     response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="shopping_list.pdf"'
+    response['Content-Disposition'] = (
+        'attachment; filename="shopping_list.pdf"'
+    )
     return response
