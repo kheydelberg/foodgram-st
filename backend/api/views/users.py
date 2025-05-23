@@ -7,9 +7,9 @@ from rest_framework.response import Response
 from djoser.views import UserViewSet as BaseUserViewSet
 from users.models import CustomUser, Follow
 from api.serializers.users import (
-    UserSubscriptionSerializer,
-    SetAvatarSerializer,
-    FollowSerializer
+    FollowDetailSerializer,
+    AvatarUpdateSerializer,
+    FollowCreateSerializer
 )
 
 
@@ -57,14 +57,14 @@ class CustomUserViewSet(BaseUserViewSet):
         """
         recipes_limit = self.request.query_params.get('recipes_limit')
 
-        serializer = FollowSerializer(data={
+        serializer = FollowCreateSerializer(data={
             'user': follower.id,
             'author': following.id
         })
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        user_serializer = UserSubscriptionSerializer(
+        user_serializer = FollowDetailSerializer(
             following,
             context={
                 'request': self.request,
@@ -118,7 +118,7 @@ class CustomUserViewSet(BaseUserViewSet):
         ).prefetch_related('recipes')
         page = self.paginate_queryset(authors)
 
-        serializer = UserSubscriptionSerializer(
+        serializer = FollowDetailSerializer(
             page if page is not None else authors,
             many=True,
             context={
@@ -168,7 +168,7 @@ class CustomUserViewSet(BaseUserViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = SetAvatarSerializer(
+        serializer = AvatarUpdateSerializer(
             user,
             data=request.data,
             partial=True,
