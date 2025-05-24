@@ -42,7 +42,8 @@ class RecipeFilter(filters.FilterSet):
             value: Boolean indicating whether to filter favorites
 
         Returns:
-            Filtered queryset containing only favorited recipes if value is True
+            Filtered queryset containing only favorited recipes
+            if value is True
         """
         user = self.request.user
         if value and user.is_authenticated:

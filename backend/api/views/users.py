@@ -1,14 +1,13 @@
 from django.shortcuts import get_object_or_404
-from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import SAFE_METHODS, IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from djoser.views import UserViewSet as BaseUserViewSet
 from users.models import CustomUser, Follow
-from api.serializers.users import (
+from api.serializers.users import AvatarUpdateSerializer
+from api.serializers.followers import (
     FollowDetailSerializer,
-    AvatarUpdateSerializer,
     FollowCreateSerializer
 )
 
