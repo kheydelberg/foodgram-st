@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 import os
-import sys
-from pathlib import Path
 import django
+import sys
 
-# Указываем правильный путь к Django проекту
-# Добавляем папку backend в PYTHONPATH
-sys.path.append(str(Path(__file__).resolve().parent))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'foodgram.settings')
 django.setup()
 
 
@@ -16,25 +13,17 @@ from django.core.management import call_command
 
 def main():
     """Запуск команд инициализации."""
-    # Определяем абсолютный путь к файлу ингредиентов
-    ingredients_path = str(Path(__file__).resolve().parent.parent / 'data' / 'ingredients.json')
-
     # Применение миграций
     print('Applying migrations...')
     call_command('migrate')
 
     # Импорт ингредиентов
     print('Importing ingredients...')
-    try:
-        call_command('import_ingredients',
-                     path=ingredients_path, format='json')
-    except Exception as e:
-        print(f'Error importing ingredients: {str(e)}')
-        raise
+    call_command('import_ingredients', format='json')
 
-    # Создание суперпользователя
+    # Создание суперпользователя, если он не существует
     from django.contrib.auth import get_user_model
-    User=get_user_model()
+    User = get_user_model()
     if not User.objects.filter(username='admin').exists():
         print('Creating superuser...')
         User.objects.create_superuser(
@@ -47,6 +36,8 @@ def main():
         print('Superuser created.')
     else:
         print('Superuser already exists.')
+
+    print('Initialization complete.')
 
 
 if __name__ == '__main__':
