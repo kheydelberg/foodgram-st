@@ -3,7 +3,7 @@ version: '3.8'  # Обновленная версия
 services:
   db:
     container_name: foodgram-db
-    image: postgres:13.0-alpine
+    image: postgres:14.0
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
