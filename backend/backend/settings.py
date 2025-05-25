@@ -58,6 +58,10 @@ INSTALLED_APPS = [
     'api',
 ]
 
+COMMANDS_MODULES = [
+    'backend.management.commands',
+]
+
 # for customing user
 AUTH_USER_MODEL = 'users.CustomUser'
 
