@@ -1,4 +1,5 @@
-version: '3.3'
+version: '3.8'  # Обновленная версия
+
 services:
   db:
     container_name: foodgram-db
@@ -12,7 +13,6 @@ services:
   backend:
     container_name: foodgram-backend
     build: ../backend
-    command: sh -c "python manage.py migrate && gunicorn foodgram.wsgi:application --bind 0:8000"
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
@@ -27,6 +27,7 @@ services:
     build: ../frontend
     volumes:
       - ../frontend/:/app/result_build/
+
   nginx:
     container_name: foodgram-proxy
     image: nginx:1.25.4-alpine
@@ -41,3 +42,7 @@ services:
       - backend
     restart: always
 
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
