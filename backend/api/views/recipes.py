@@ -19,7 +19,7 @@ from api.serializers.recipes import (
     RecipeCreateUpdateSerializer, FavoriteSerializer,
     ShoppingCartSerializer
 )
-from api.utils import generate_pdf_shopping_list, generate_text_shopping_list
+from api.utils import generate_text_shopping_list
 
 
 class IngredientAPIViewSet(viewsets.ReadOnlyModelViewSet):
@@ -142,7 +142,7 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
             request: HTTP request object
 
         Returns:
-            Shopping list in requested format (PDF/TXT)
+            Shopping list in requested format (TXT)
         """
         user = request.user
         ingredients = (
@@ -162,10 +162,7 @@ class RecipeAPIViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK
             )
 
-        export_format = request.query_params.get('format', 'pdf')
-        if export_format == 'txt':
-            return generate_text_shopping_list(ingredients, user)
-        return generate_pdf_shopping_list(ingredients, user)
+        return generate_text_shopping_list(ingredients, user)
 
     @action(
         detail=True,
