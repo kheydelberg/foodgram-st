@@ -59,7 +59,7 @@ INSTALLED_APPS = [
 ]
 
 COMMANDS_MODULES = [
-    'backend.management.commands',
+    'management.commands',
 ]
 
 # for customing user
