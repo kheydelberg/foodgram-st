@@ -75,7 +75,7 @@ class Command(BaseCommand):
 
             def generate_test_image():
                 placeholder_path = os.path.join(
-                    settings.BASE_DIR, '../frontend/public/logo192.png'
+                    settings.BASE_DIR, '../data/test.png'
                 )
                 if os.path.exists(placeholder_path):
                     with open(placeholder_path, 'rb') as f:
