@@ -11,8 +11,8 @@ services:
     restart: always
 
   backend:
+    image: kheydelberg/foodgram-backend:latest
     container_name: foodgram-backend
-    build: ../backend
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
@@ -27,7 +27,7 @@ services:
 
   frontend:
     container_name: foodgram-front
-    build: ../frontend
+    image: kheydelberg/foodgram-frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
