@@ -4,23 +4,18 @@ import sys
 from pathlib import Path
 import django
 
-
 # Указываем правильный путь к Django проекту
-# Добавляем папку backend в PYTHONPATH
 sys.path.append(str(Path(__file__).resolve().parent))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
-
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
-
 
 def main():
     """Запуск команд инициализации."""
     # Определяем абсолютный путь к файлу ингредиентов
-    ingredients_path = str(Path(__file__).resolve(
-    ).parent.parent / 'data' / 'ingredients.json')
+    ingredients_path = str(Path(__file__).resolve().parent.parent / 'data' / 'ingredients.json')
 
     # Применение миграций
     print('Applying migrations...')
@@ -29,8 +24,7 @@ def main():
     # Импорт ингредиентов
     print('Importing ingredients...')
     try:
-        call_command('import_ingredients',
-                     path=ingredients_path, format='json')
+        call_command('import_ingredients', path=ingredients_path)  # Убрали format='json'
     except Exception as e:
         print(f'Error importing ingredients: {str(e)}')
         raise
@@ -49,7 +43,6 @@ def main():
         print('Superuser created.')
     else:
         print('Superuser already exists.')
-
 
 if __name__ == '__main__':
     main()
