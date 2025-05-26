@@ -57,7 +57,7 @@ class Recipe(models.Model):
         db_index=True,
     )
     short_code = models.SlugField(
-        max_length=10,
+        max_length=15,
         unique=True,
         blank=True,
         editable=False,
