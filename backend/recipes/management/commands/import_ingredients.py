@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from recipes.models import Ingredient
 
+
 class Command(BaseCommand):
     help = 'Imports ingredients from JSON or CSV file into the database'
 
@@ -21,20 +22,21 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         path = options['path']
-        
+
         try:
             with open(path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
-                
+
             ingredients = [
                 Ingredient(
                     name=item['name'],
                     measurement_unit=item['measurement_unit']
                 ) for item in data
             ]
-            
+
             Ingredient.objects.bulk_create(ingredients)
-            self.stdout.write(self.style.SUCCESS(f'Successfully imported {len(ingredients)} ingredients'))
-            
+            self.stdout.write(self.style.SUCCESS(
+                f'Successfully imported {len(ingredients)} ingredients'))
+
         except Exception as e:
             raise CommandError(f'Error importing ingredients: {str(e)}')

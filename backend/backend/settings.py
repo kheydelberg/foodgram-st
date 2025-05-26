@@ -59,7 +59,7 @@ INSTALLED_APPS = [
 ]
 
 COMMANDS_MODULES = [
-    'management.commands',
+    'recipes.management.commands',
 ]
 
 # for customing user
