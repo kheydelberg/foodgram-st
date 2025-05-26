@@ -19,7 +19,7 @@ from recipes.models import Recipe, Ingredient, RecipeIngredient
 
 
 def prepare_database_for_postman():
-    """Подготовка базы данных для тестирования через Postman"""
+    """Подготовка базы данных для тестирования через Postman."""
     # 1. Проверка настроек
     print("\n1. Проверка настроек...")
     if not settings.DEBUG:
@@ -52,7 +52,7 @@ def prepare_database_for_postman():
 
 
 def create_test_data():
-    """Создание тестовых данных (сохранена оригинальная структура)"""
+    """Создание тестовых данных (сохранена оригинальная структура)."""
     User = get_user_model()
 
     # Создаем суперпользователя для тестирования
@@ -69,9 +69,9 @@ def create_test_data():
     # Создаем стандартных пользователей
     users = [
         {'username': 'chef', 'email': 'chef@example.com',
-            'password': 'chefpass', 'first_name': 'Gordon', 'last_name': 'Ramsay'},
+         'password': 'chefpass', 'first_name': 'Godon', 'last_name': 'Ramsay'},
         {'username': 'baker', 'email': 'baker@example.com',
-            'password': 'bakerpass', 'first_name': 'Julia', 'last_name': 'Child'},
+         'password': 'bakerpass', 'first_name': 'Julia', 'last_name': 'Child'},
     ]
 
     for user_data in users:
