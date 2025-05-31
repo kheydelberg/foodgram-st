@@ -51,7 +51,7 @@ class CustomUserSerializer(BaseUserSerializer):
             ValidationError: If email already exists
         """
         if (CustomUser.objects.filter(email=email).exists()
-                and self.context.get('request').method == 'POST'):
+                and self.context['request'].method == 'POST'):
             raise serializers.ValidationError(
                 'This email is already registered'
             )
@@ -66,9 +66,9 @@ class CustomUserSerializer(BaseUserSerializer):
         Returns:
             bool: True if subscribed, False otherwise
         """
-        current_user = self.context.get('request').user
+        current_user = self.context['request'].user
         return (current_user.is_authenticated
-                and current_user.follower.filter(author=user).exists())
+                and current_user.following.filter(author=user).exists())
 
     def format_response(self, instance):
         """Format the serialized response removing sensitive data.
@@ -80,8 +80,7 @@ class CustomUserSerializer(BaseUserSerializer):
             dict: Serialized user data without password
         """
         response_data = super().to_representation(instance)
-        if 'password' in response_data:
-            del response_data['password']
+        response_data.pop('password', None)
         return response_data
 
     def validate_email(self, value):
@@ -97,24 +96,19 @@ class CustomUserSerializer(BaseUserSerializer):
         return self.perform_create(validated_data)
 
     def to_representation(self, instance):
-        """Customize response format based on request context.
-
-        Returns simplified response for registration endpoint,
-        full profile data for other requests.
-        """
-        request = self.context.get('request')
-        if (
-            request and request.method == 'POST'
-                and request.path.endswith('/api/users/')
-        ):
-            return {
-                'id': instance.id,
-                'username': instance.username,
-                'first_name': instance.first_name,
-                'last_name': instance.last_name,
-                'email': instance.email,
-            }
+        """Customize response format based on request context."""
+        request = self.context['request']
+        if request.method == 'POST' and request.path.endswith('/api/users/'):
+            return RegistrationResponseSerializer(instance).data
         return self.format_response(instance)
+
+
+class RegistrationResponseSerializer(serializers.ModelSerializer):
+    """Serializer for registration response format."""
+
+    class Meta:
+        model = CustomUser
+        fields = ('id', 'username', 'first_name', 'last_name', 'email')
 
 
 class AvatarUpdateSerializer(serializers.ModelSerializer):
@@ -140,11 +134,9 @@ class AvatarUpdateSerializer(serializers.ModelSerializer):
         """
         if not user.avatar:
             return None
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(user.avatar.url)
-        else:
-            return user.avatar.url
+
+        request = self.context['request']
+        return request.build_absolute_uri(user.avatar.url)
 
     def to_representation(self, instance):
         """Return avatar URL in response."""

@@ -8,66 +8,18 @@ from recipes.models import (
     Favorite, ShoppingCart
 )
 
+from api.consts import (
+    MAX_COOKING_TIME,
+    MAX_INGREDIENT_AMOUNT,
+    MIN_COOKING_TIME,
+    MIN_INGREDIENT_AMOUNT
+)
 
-class RecipeValidationMixin:
-    """Mixin for common recipe validations."""
-
-    def validate_cooking_time(self, duration):
-        """Validate cooking time constraints."""
-        if duration < 1:
-            raise serializers.ValidationError(
-                f'Cooking time must be at least {1} minute'
-            )
-        if duration > 1000:
-            raise serializers.ValidationError(
-                'Cooking time is too long'
-            )
-        return duration
-
-    def validate_image(self, img):
-        """Validate image presence."""
-        if not img:
-            raise serializers.ValidationError('Image is required')
-        return img
-
-
-class IngredientHandlingMixin:
-    """Mixin for handling recipe ingredients."""
-
-    @db_transaction.atomic
-    def _add_components(self, recipe, components):
-        """Bulk create recipe ingredients."""
-        RecipeIngredient.objects.bulk_create(
-            RecipeIngredient(
-                recipe=recipe,
-                ingredient=component['id'],
-                amount=component['amount']
-            ) for component in components
-        )
-
-    def validate_ingredients(self, components):
-        """Validate ingredients requirements."""
-        if not components:
-            raise serializers.ValidationError(
-                {'ingredients': 'At least one ingredient is required'}
-            )
-
-        component_ids = [item['id'].id for item in components]
-        if len(component_ids) != len(set(component_ids)):
-            raise serializers.ValidationError(
-                {'ingredients': 'Ingredients must be unique'}
-            )
-        return components
-
-
-class UserRelationCheckMixin:
-    """Mixin for checking user-recipe relationships."""
-
-    def _check_user_relation(self, obj, relation_name):
-        """Check if recipe exists in user's related model."""
-        req = self.context.get('request')
-        return (req and req.user.is_authenticated
-                and getattr(obj, relation_name).filter(user=req.user).exists())
+from api.mixins import (
+    RecipeValidationMixin,
+    IngredientHandlingMixin,
+    UserRelationCheckMixin
+)
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -84,20 +36,14 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all()
     )
-    amount = serializers.IntegerField()
+    amount = serializers.IntegerField(
+        min_value=MIN_INGREDIENT_AMOUNT,
+        max_value=MAX_INGREDIENT_AMOUNT
+    )
 
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'amount')
-
-    def validate_amount(self, value):
-        """Ensure the amount meets minimum requirements."""
-        min_value = 1
-        if value < min_value:
-            raise serializers.ValidationError(
-                f'Ingredient quantity must be at least {min_value}'
-            )
-        return value
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
@@ -156,7 +102,10 @@ class RecipeCreateUpdateSerializer(
     ingredients = RecipeIngredientCreateSerializer(many=True)
     image = Base64ImageField()
     author = CustomUserSerializer(read_only=True)
-    cooking_time = serializers.IntegerField()
+    cooking_time = serializers.IntegerField(
+        min_value=MIN_COOKING_TIME,
+        max_value=MAX_COOKING_TIME
+    )
 
     class Meta:
         model = Recipe
@@ -184,7 +133,7 @@ class RecipeCreateUpdateSerializer(
     def update(self, instance, validated_attrs):
         """Update recipe and its ingredients."""
         components = validated_attrs.pop('ingredients')
-        RecipeIngredient.objects.filter(recipe=instance).delete()
+        instance.recipe_ingredients.all().delete()
         self._add_components(instance, components)
         return super().update(instance, validated_attrs)
 
@@ -192,7 +141,7 @@ class RecipeCreateUpdateSerializer(
         """Return representation in list format."""
         return RecipeListSerializer(
             instance,
-            context={'request': self.context.get('request')}
+            context={'request': self.context['request']}
         ).data
 
 
@@ -224,7 +173,7 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
         """Return recipe representation."""
         return CompactRecipeSerializer(
             instance.recipe,
-            context={'request': self.context.get('request')}
+            context={'request': self.context['request']}
         ).data
 
 
@@ -246,5 +195,5 @@ class FavoriteSerializer(serializers.ModelSerializer):
         """Return recipe representation."""
         return CompactRecipeSerializer(
             instance.recipe,
-            context={'request': self.context.get('request')}
+            context={'request': self.context['request']}
         ).data

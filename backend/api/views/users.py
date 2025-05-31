@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from djoser.views import UserViewSet as BaseUserViewSet
-from users.models import CustomUser, Follow
+from users.models import CustomUser
 from api.serializers.users import AvatarUpdateSerializer
 from api.serializers.followers import (
     FollowDetailSerializer,
@@ -85,10 +85,7 @@ class CustomUserViewSet(BaseUserViewSet):
         Returns:
             Response with status code (204) or error (400)
         """
-        deleted, _ = Follow.objects.filter(
-            user=follower,
-            author=following
-        ).delete()
+        deleted, _ = follower.follower.filter(author=following).delete()
 
         if not deleted:
             return Response(

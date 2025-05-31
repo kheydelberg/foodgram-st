@@ -2,16 +2,26 @@ from django.db import models
 from django.conf import settings
 import uuid
 from django.utils.text import slugify
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
+from api.consts import (
+    MIN_COOKING_TIME,
+    MAX_COOKING_TIME,
+    MIN_INGREDIENT_AMOUNT,
+    MAX_INGREDIENT_AMOUNT
+)
 
 
 class Ingredient(models.Model):
     """Model representing an ingredient with measurement unit."""
 
-    name = models.CharField(_('name'), max_length=200, db_index=True)
-    measurement_unit = models.CharField(_('measurement unit'), max_length=50)
+    name = models.CharField(
+        _('name'), max_length=200, db_index=True
+    )
+    measurement_unit = models.CharField(
+        _('measurement unit'), max_length=50
+    )
 
     class Meta:
         """Meta options for Ingredient model."""
@@ -36,7 +46,9 @@ class Recipe(models.Model):
         related_name='recipes'
     )
     name = models.CharField(_('name'), max_length=200)
-    image = models.ImageField(_('image'), upload_to='recipes/images/')
+    image = models.ImageField(
+        _('image'), upload_to='recipes/images/'
+    )
     text = models.TextField(_('description'))
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -46,10 +58,20 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         _('cooking time'),
-        validators=[MinValueValidator(
-            1,
-            message=_('Cooking time should be at least 1 minute')
-        )],
+        validators=[
+            MinValueValidator(
+                MIN_COOKING_TIME,
+                message=_(
+                    'Cooking time should be at least %(limit_value)s minute'
+                ) % {'limit_value': MIN_COOKING_TIME}
+            ),
+            MaxValueValidator(
+                MAX_COOKING_TIME,
+                message=_(
+                    'Cooking time should not exceed %(limit_value)s minutes'
+                ) % {'limit_value': MAX_COOKING_TIME}
+            )
+        ],
     )
     pub_date = models.DateTimeField(
         _('publication date'),
@@ -81,8 +103,12 @@ class Recipe(models.Model):
             base_slug = slugify(self.name)[:6] or 'recipe'
             self.short_code = f"{base_slug}-{uuid.uuid4().hex[:4]}".lower()
 
-            while Recipe.objects.filter(short_code=self.short_code).exists():
-                self.short_code = f"{base_slug}-{uuid.uuid4().hex[:4]}".lower()
+            while Recipe.objects.filter(
+                short_code=self.short_code
+            ).exists():
+                self.short_code = (
+                    f"{base_slug}-{uuid.uuid4().hex[:4]}".lower()
+                )
 
         super().save(*args, **kwargs)
 
@@ -101,7 +127,7 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    """Intermediate model for Recipe-Ingredient relationship with amounts."""
+    """Intermediate model for Recipe-Ingredient relationship."""
 
     recipe = models.ForeignKey(
         Recipe,
@@ -119,8 +145,16 @@ class RecipeIngredient(models.Model):
         _('amount'),
         validators=[
             MinValueValidator(
-                1,
-                message=_('Amount should be at least 1')
+                MIN_INGREDIENT_AMOUNT,
+                message=_(
+                    'Amount should be at least %(limit_value)s'
+                ) % {'limit_value': MIN_INGREDIENT_AMOUNT}
+            ),
+            MaxValueValidator(
+                MAX_INGREDIENT_AMOUNT,
+                message=_(
+                    'Amount should not exceed %(limit_value)s'
+                ) % {'limit_value': MAX_INGREDIENT_AMOUNT}
             )
         ],
     )
